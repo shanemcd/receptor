@@ -5,15 +5,16 @@ package workceptor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/project-receptor/receptor/pkg/logger"
-	"github.com/rogpeppe/go-internal/lockedfile"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/project-receptor/receptor/pkg/logger"
+	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
 // Work sleep constants
@@ -208,7 +209,7 @@ func (sfd *StatusFileData) UpdateFullStatus(filename string, statusFunc func(*St
 		return err
 	}
 	defer sfd.unlockStatusFile(filename, lockFile)
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(filename, os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
@@ -368,9 +369,25 @@ func (bwu *BaseWorkUnit) UnredactedStatus() *StatusFileData {
 func (bwu *BaseWorkUnit) Release(force bool) error {
 	bwu.statusLock.Lock()
 	defer bwu.statusLock.Unlock()
-	err := os.RemoveAll(bwu.UnitDir())
-	if err != nil && !force {
-		return err
+	attemptsLeft := 3
+	for {
+		err := os.RemoveAll(bwu.UnitDir())
+		if force {
+			break
+		} else if err != nil {
+			attemptsLeft--
+
+			if attemptsLeft > 0 {
+				logger.Warning("Error removing directory for %s. Retrying %d more times.", bwu.unitID, attemptsLeft)
+				time.Sleep(time.Second)
+				continue
+			} else {
+				logger.Error("Error removing directory for %s. No more retries left.", bwu.unitID)
+				return err
+			}
+		}
+
+		break
 	}
 	bwu.w.activeUnitsLock.Lock()
 	defer bwu.w.activeUnitsLock.Unlock()

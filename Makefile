@@ -50,7 +50,7 @@ else
 endif
 
 receptor: $(shell find pkg -type f -name '*.go') cmd/receptor.go
-	go build -ldflags "-X 'github.com/project-receptor/receptor/pkg/version.Version=$(APPVER)'" $(TAGPARAM) cmd/receptor.go
+	go build -gcflags=all="-N -l" -ldflags "-X 'github.com/project-receptor/receptor/pkg/version.Version=$(APPVER)'" $(TAGPARAM) cmd/receptor.go
 
 lint:
 	@golint cmd/... pkg/... example/...

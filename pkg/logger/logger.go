@@ -2,10 +2,12 @@ package logger
 
 import (
 	"fmt"
-	"github.com/ghjm/cmdline"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/ghjm/cmdline"
 )
 
 var logLevel int
@@ -48,6 +50,17 @@ func GetLogLevelByName(logName string) (int, error) {
 // GetLogLevel returns current log level
 func GetLogLevel() int {
 	return logLevel
+}
+
+func LogLevelToName(logLevel int) (string, error) {
+	var err error
+	for k, v := range logLevelMap {
+		if v == logLevel {
+			return k, nil
+		}
+	}
+	err = fmt.Errorf("%s is not a valid log level", strconv.Itoa(logLevel))
+	return "", err
 }
 
 // logLevelMap maps strings to log level int
